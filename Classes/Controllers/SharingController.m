@@ -17,6 +17,9 @@
 #import "InstapaperSubmission.h"
 #import "InstapaperActivity.h"
 
+#import "PocketActivity.h"
+#import "PocketSubmission.h"
+
 #import "OpenInSafariActivity.h"
 
 #import "BarButtonItem.h"
@@ -36,14 +39,14 @@
         title = [title_ copy];
         controller = controller_; // XXX: retain this?
     }
-
+    
     return self;
 }
 
 - (void)dealloc {
     [url release];
     [title release];
-
+    
     [super dealloc];
 }
 
@@ -53,27 +56,29 @@
     } else {
         rect = [[view superview] convertRect:rect fromView:view];
     }
-
+    
     if (controller == nil) {
         controller = [[view window] rootViewController];
     }
-
+    
     if ([[self class] useNativeSharing]) {
         InstapaperActivity *instapaperActivity = [[InstapaperActivity alloc] init];
+        PocketActivity *pocketActivity = [[PocketActivity alloc] init];
         OpenInSafariActivity *openInSafariActivity = [[OpenInSafariActivity alloc] init];
         
         NSArray *activityItems = [NSArray arrayWithObject:url];
-        NSArray *applicationActivities = [NSArray arrayWithObjects:instapaperActivity, openInSafariActivity, nil];
-
+        NSArray *applicationActivities = [NSArray arrayWithObjects:instapaperActivity, pocketActivity, openInSafariActivity, nil];
+        
         [instapaperActivity release];
+        [pocketActivity release];
         [openInSafariActivity release];
-
+        
         UIActivityViewController *activityController = [[UIActivityViewController alloc] initWithActivityItems:activityItems applicationActivities:applicationActivities];
         [activityController setExcludedActivityTypes:[NSArray arrayWithObjects:UIActivityTypePrint, UIActivityTypeSaveToCameraRoll, UIActivityTypeMessage, nil]];
-
+        
         if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
             UIPopoverController *popover = [[UIPopoverController alloc] initWithContentViewController:activityController];
-
+            
             if (item != nil) {
                 [popover presentPopoverFromBarButtonItemInWindow:item permittedArrowDirections:UIPopoverArrowDirectionAny animated:YES];
             } else if (view != nil) {
@@ -81,7 +86,7 @@
             } else {
                 NSAssert(NO, @"You must provide a view or a bar button item to a sharing controller.");
             }
-
+            
             [activityController setCompletionHandler:^(NSString *activityType, BOOL completed) {
                 [popover dismissPopoverAnimated:YES];
                 [popover release];
@@ -97,20 +102,21 @@
                                 destructiveButtonTitle:nil
                                 otherButtonTitles:nil
                                 ];
-
+        
         [sheet addButtonWithTitle:@"Open with Safari"];
         if ([MFMailComposeViewController canSendMail]) [sheet addButtonWithTitle:@"Mail Link"];
         [sheet addButtonWithTitle:@"Copy Link"];
         [sheet addButtonWithTitle:@"Read Later"];
+        [sheet addButtonWithTitle:@"Pocket"];
         [sheet addButtonWithTitle:@"Cancel"];
         [sheet setCancelButtonIndex:([sheet numberOfButtons] - 1)];
-
+        
         if (view != nil) {
             [sheet showFromRect:rect inView:[view superview] animated:YES];
         } else {
             [sheet showFromBarButtonItemInWindow:item animated:YES];
         }
-
+        
         [self retain];
         [sheet release];
     }
@@ -137,14 +143,14 @@
 - (void)composeMail {
     MFMailComposeViewController *composeController = [[MFMailComposeViewController alloc] init];
     [composeController setMailComposeDelegate:self];
-
+    
     NSString *urlString = [url absoluteString];
     NSString *body = [NSString stringWithFormat:@"<a href=\"%@\">%@</a>", urlString, urlString];
     [composeController setMessageBody:body isHTML:YES];
     [composeController setSubject:title];
-
+    
     [controller presentViewController:composeController animated:YES completion:NULL];
-
+    
     [self retain];
     [composeController release];
 }
@@ -161,6 +167,12 @@
     [submission release];
 }
 
+- (void)submitToPocket {
+    PocketSubmission *submisstion = [[PocketSubmission alloc] initWithURL:url];
+    [submisstion submitFromController:controller];
+    [submisstion release];
+}
+
 - (void)mailComposeController:(MFMailComposeViewController *)composeController didFinishWithResult:(MFMailComposeResult)result error:(NSError *)error {
     [controller dismissViewControllerAnimated:YES completion:NULL];
     [self release];
@@ -168,7 +180,7 @@
 
 - (void)actionSheet:(UIActionSheet *)action clickedButtonAtIndex:(NSInteger)buttonIndex {
     BOOL canSendMail = [MFMailComposeViewController canSendMail];
-
+    
     if (buttonIndex == 0) {
         [self openInSafari];
     } else if ((canSendMail && buttonIndex == 1)) {
@@ -177,8 +189,10 @@
         [self copyToPasteboard];
     } else if ((canSendMail && buttonIndex == 3) || (!canSendMail && buttonIndex == 2)) {
         [self submitToInstapaper];
+    } else if ((canSendMail && buttonIndex == 4) || (!canSendMail && buttonIndex == 3)) {
+        [self submitToInstapaper];
     }
-
+    
     [self release];
 }
 

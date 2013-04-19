@@ -29,6 +29,10 @@
 #import "UIApplication+ActivityIndicator.h"
 #import "UINavigationItem+MultipleItems.h"
 
+#import "PocketAPI.h"
+
+#define POCKET_CONSUMER_KEY @"13283-2ca174e1eda9986d69ef7e8f"
+
 @implementation UINavigationController (AppDelegate)
 
 - (BOOL)controllerBelongsOnLeft:(UIViewController *)controller {
@@ -167,10 +171,20 @@
     pingController = [[PingController alloc] init];
     [pingController setDelegate:self];
     [pingController ping];
-    
+
+    [[PocketAPI sharedAPI] setConsumerKey:POCKET_CONSUMER_KEY];
     return YES;
 }
-         
+
+-(BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation{
+	if([[PocketAPI sharedAPI] handleOpenURL:url]){
+		return YES;
+	}else{
+		// if you handle your own URLs, do it here
+		return NO;
+	}
+}
+
 #pragma mark - View Controllers
 
 - (void)navigationController:(UINavigationController *)navigation willShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
