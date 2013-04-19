@@ -1,5 +1,6 @@
-## Welcome to news:yc on GitHub! ##
+## New Features ##
 
-I should add more info here, but for right now feel free to just browse around. Check out the issues section for things you could try implementing if you want to contribute.
+This is a fork of the news:yc iOS client. As I use Pocket rather than Instapaper, so I add the support for Pocket. You can use it if you are as with me.
+
 
 
